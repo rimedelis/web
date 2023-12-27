@@ -2,17 +2,17 @@
 use function Safe\mime_content_type;
 
 enum ArtworkMimeType: string{
-	case JPG = "image/jpeg";
-	case BMP = "image/bmp";
-	case PNG = "image/png";
-	case TIFF = "image/tiff";
+	case JPG = 'image/jpeg';
+	case BMP = 'image/bmp';
+	case PNG = 'image/png';
+	case TIFF = 'image/tiff';
 
 	public function GetFileExtension(): string{
 		return match($this){
-			self::JPG => ".jpg",
-			self::BMP => ".bmp",
-			self::PNG => ".png",
-			self::TIFF => ".tif",
+			self::JPG => '.jpg',
+			self::BMP => '.bmp',
+			self::PNG => '.png',
+			self::TIFF => '.tif',
 		};
 	}
 
@@ -34,11 +34,13 @@ enum ArtworkMimeType: string{
 	 * @throws \Exceptions\InvalidImageUploadException
 	 */
 	private static function imagecreatefromtiff(string $filename){
-		exec("convert $filename -sampling-factor 4:2:0 -strip -quality 80 -colorspace RGB -interlace JPEG $filename.thumb.jpg", $shellOutput, $resultCode);
+		exec('convert '.  escapeshellarg($filename) . ' -sampling-factor 4:2:0 -strip -quality 80 -colorspace RGB -interlace JPEG ' .  escapeshellarg($filename) . '.thumb.jpg', $shellOutput, $resultCode);
+
 		if($resultCode !== 0){
-			throw new Exceptions\InvalidImageUploadException("Failed to convert TIFF to JPEG\n");
+			throw new Exceptions\InvalidImageUploadException('Failed to convert TIFF to JPEG');
 		}
-		return \Safe\imagecreatefromjpeg("$filename.thumb.jpg");
+
+		return \Safe\imagecreatefromjpeg($filename . '.thumb.jpg');
 	}
 
 	/**
@@ -51,7 +53,7 @@ enum ArtworkMimeType: string{
 
 		$mimeType = mime_content_type($uploadedFile['tmp_name']);
 		$mimeType = match($mimeType){
-			"image/x-ms-bmp", "image/x-bmp" => "image/bmp",
+			'image/x-ms-bmp', 'image/x-bmp' => 'image/bmp',
 			default => $mimeType,
 		};
 
