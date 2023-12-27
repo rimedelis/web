@@ -174,7 +174,7 @@ class Artwork extends PropertiesBase{
 	}
 
 	protected function SetMimeType(null|string|ArtworkMimeType $mimeType): void{
-		if (is_string($mimeType)){
+		if(is_string($mimeType)){
 			$this->_MimeType = ArtworkMimeType::tryFrom($mimeType);
 		}
 		else{
@@ -239,7 +239,7 @@ class Artwork extends PropertiesBase{
 		}
 
 		foreach($this->ArtworkTags as $tag){
-			if (strlen($tag->Name) > COVER_ARTWORK_MAX_STRING_LENGTH) {
+			if(strlen($tag->Name) > COVER_ARTWORK_MAX_STRING_LENGTH) {
 				$error->Add(new Exceptions\StringTooLongException('Artwork Tag: '. $tag->Name));
 			}
 		}
