@@ -194,6 +194,7 @@ class DbConnection{
 							else{
 								switch($metadata[$i]['native_type']){
 									case 'DATETIME':
+									case 'TIMESTAMP':
 										$object->{$metadata[$i]['name']} = new DateTime($row[$i], new DateTimeZone('UTC'));
 										break;
 
