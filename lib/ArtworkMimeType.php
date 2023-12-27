@@ -68,7 +68,7 @@ enum ArtworkMimeType: string{
 	 * @return array<string>
 	 */
 	public static function Values(): array{
-		return array_map(function (ArtworkMimeType $case){
+		return array_map(function(ArtworkMimeType $case){
 			return $case->value;
 		}, ArtworkMimeType::cases());
 	}

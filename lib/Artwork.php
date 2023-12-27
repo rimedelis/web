@@ -35,6 +35,7 @@ class Artwork extends PropertiesBase{
 	public $CompletedYear;
 	public $CompletedYearIsCirca;
 	public $Created;
+	public $Updated;
 	public $Status;
 	public $EbookWwwFilesystemPath;
 	protected $_UrlName;
@@ -204,18 +205,22 @@ class Artwork extends PropertiesBase{
 		}
 
 		if($this->Name === null || $this->Name == ''){
-			$error->Add(new Exceptions\ArtworkNameRequiredException ());
+			$error->Add(new Exceptions\ArtworkNameRequiredException());
 		}
 
 		if($this->Name !== null && strlen($this->Name) > COVER_ARTWORK_MAX_STRING_LENGTH){
 			$error->Add(new Exceptions\StringTooLongException('Artwork Name'));
 		}
 
-		if($this->CompletedYear !== null && ($this->CompletedYear <=0 || $this->CompletedYear > intval(date('Y')))){
+		if($this->CompletedYear !== null && ($this->CompletedYear <= 0 || $this->CompletedYear > intval(date('Y')))){
 			$error->Add(new Exceptions\InvalidCompletedYearException());
 		}
 
-		if($this->PublicationYear !== null && ($this->PublicationYear <=0 || $this->PublicationYear > intval(date('Y')))){
+		if($this->CompletedYear === null && $this->CompletedYearIsCirca){
+			$this->CompletedYearIsCirca = false;
+		}
+
+		if($this->PublicationYear !== null && ($this->PublicationYear <= 0 || $this->PublicationYear > intval(date('Y')))){
 			$error->Add(new Exceptions\InvalidPublicationYearException());
 		}
 

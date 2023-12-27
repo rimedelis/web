@@ -6,6 +6,7 @@ CREATE TABLE `Artworks` (
   `CompletedYear` smallint unsigned NULL,
   `CompletedYearIsCirca` boolean NOT NULL DEFAULT FALSE,
   `Created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `Updated` timestamp NOT NULL,
   `Status` enum('unverified', 'approved', 'declined', 'in_use') DEFAULT 'unverified',
   `MuseumUrl` varchar(255) NULL,
   `PublicationYear` smallint unsigned NULL,
