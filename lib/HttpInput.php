@@ -1,5 +1,7 @@
 <?
+use function Safe\ini_get;
 use function Safe\preg_match;
+use function Safe\substr;
 
 class HttpInput{
 	public static function RequestMethod(): int{

@@ -1,4 +1,6 @@
 <?
+use function Safe\session_unset;
+
 session_start();
 
 $exception = $_SESSION['exception'] ?? null;

@@ -321,7 +321,11 @@ class Library{
 	 */
 	public static function GetEbooksFromFilesystem(?string $webRoot = WEB_ROOT): array{
 		$ebooks = [];
-		$contentFiles = explode("\n", trim(shell_exec('find ' . escapeshellarg($webRoot . '/ebooks/') . ' -name "content.opf" | sort') ?? ''));
+		$commandOutput = shell_exec('find ' . escapeshellarg($webRoot . '/ebooks/') . ' -name "content.opf" | sort');
+		if(!$commandOutput){
+			$commandOutput = '';
+		}
+		$contentFiles = explode("\n", trim($commandOutput));
 
 		foreach($contentFiles as $path){
 			if($path == '')
@@ -545,7 +549,7 @@ class Library{
 		return $retval;
 	}
 
-	public static function GetEbook($ebookWwwFilesystemPath): ?Ebook{
+	public static function GetEbook(?string $ebookWwwFilesystemPath): ?Ebook{
 		if($ebookWwwFilesystemPath === null){
 			return null;
 		}
@@ -584,7 +588,12 @@ class Library{
 		$authors = [];
 		$tagsByName = [];
 
-		foreach(explode("\n", trim(shell_exec('find ' . EBOOKS_DIST_PATH . ' -name "content.opf"') ?? '')) as $filename){
+		$commandOutput = shell_exec('find ' . EBOOKS_DIST_PATH . ' -name "content.opf"');
+		if(!$commandOutput){
+			$commandOutput = '';
+		}
+
+		foreach(explode("\n", trim($commandOutput)) as $filename){
 			try{
 				$ebookWwwFilesystemPath = preg_replace('|/content\.opf|ius', '', $filename);
 

@@ -126,7 +126,7 @@ class DbConnection{
 				$done = true;
 			}
 			catch(\PDOException $ex){
-				if($ex->errorInfo[1] == 1213 && $deadlockRetries < 3){ // InnoDB deadlock, this is normal and happens occasionally. All we have to do is retry the query.
+				if(isset($ex->errorInfo) && $ex->errorInfo[1] == 1213 && $deadlockRetries < 3){ // InnoDB deadlock, this is normal and happens occasionally. All we have to do is retry the query.
 					$deadlockRetries++;
 
 					usleep(500000 * $deadlockRetries); // Give the deadlock some time to clear up.  Start at .5 seconds
@@ -188,11 +188,15 @@ class DbConnection{
 						$object = new $class();
 
 						for($i = 0; $i < $handle->columnCount(); $i++){
+							if($metadata[$i] === false){
+								continue;
+							}
+
 							if($row[$i] === null){
 								$object->{$metadata[$i]['name']} = null;
 							}
 							else{
-								switch($metadata[$i]['native_type']){
+								switch($metadata[$i]['native_type'] ?? null){
 									case 'DATETIME':
 									case 'TIMESTAMP':
 										$object->{$metadata[$i]['name']} = new DateTime($row[$i], new DateTimeZone('UTC'));
@@ -229,7 +233,7 @@ class DbConnection{
 			catch(\PDOException $ex){
 				// HY000 is thrown when there is no result set, e.g. for an update operation.
 				// If anything besides that is thrown, then send it up the stack
-				if($ex->errorInfo[0] != "HY000"){
+				if(!isset($ex->errorInfo) || $ex->errorInfo[0] != "HY000"){
 					throw $ex;
 				}
 			}

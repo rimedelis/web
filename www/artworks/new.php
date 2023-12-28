@@ -23,7 +23,7 @@ try{
 	if($created){
 		http_response_code(201);
 		$artwork = new Artwork();
-		$artwork->Artists = new Artist();
+		$artwork->Artist = new Artist();
 		session_unset();
 	}
 
@@ -130,7 +130,7 @@ catch(Exceptions\InvalidPermissionsException){
 						name="artwork-tags"
 						placeholder="A list of comma-separated tags"
 						required="required"
-						value="<?= Formatter::ToPlainText($artwork->ArtworkTagsImploded) ?>"
+						value="<?= Formatter::ToPlainText($artwork->GetArtworkTagsImploded()) ?>"
 					/>
 				</label>
 			</fieldset>

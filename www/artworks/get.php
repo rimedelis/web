@@ -1,4 +1,5 @@
 <?
+
 try{
 	$artistUrlName = HttpInput::Str(GET, 'artist') ?? '';
 	$artworkUrlName = HttpInput::Str(GET, 'artwork') ?? '';

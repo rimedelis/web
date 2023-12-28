@@ -163,7 +163,11 @@ class Ebook{
 		}
 
 		// Fill in the short history of this repo.
-		$historyEntries = explode("\n", shell_exec('cd ' . escapeshellarg($this->RepoFilesystemPath) . ' && git log -n5 --pretty=format:"%ct %H %s"') ?? '');
+		$commandOutput = shell_exec('cd ' . escapeshellarg($this->RepoFilesystemPath) . ' && git log -n5 --pretty=format:"%ct %H %s"');
+		if(!$commandOutput){
+			$commandOutput = '';
+		}
+		$historyEntries = explode("\n",  $commandOutput);
 
 		foreach($historyEntries as $entry){
 			$array = explode(' ', $entry, 3);

@@ -17,7 +17,11 @@ enum ImageMimeType: string{
 		};
 	}
 
-	public static function FromFile(string $path): null|ImageMimeType{
+	public static function FromFile(?string $path): ?ImageMimeType{
+		if($path === null){
+			return null;
+		}
+
 		$mimeType = mime_content_type($path);
 
 		$mimeType = match($mimeType){

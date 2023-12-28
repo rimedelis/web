@@ -55,7 +55,7 @@ class ArtworkTag extends PropertiesBase{
 	/**
 	 * @throws \Exceptions\ValidationException
 	 */
-	public static function GetOrCreate($artworkTag): ArtworkTag{
+	public static function GetOrCreate(ArtworkTag $artworkTag): ArtworkTag{
 		$artworkTag->Validate();
 
 		$result = Db::Query('

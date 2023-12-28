@@ -19,13 +19,13 @@ use function Safe\tempnam;
  * @property string $UrlName
  * @property string $Url
  * @property array<ArtworkTag> $ArtworkTags
- * @property string $ArtworkTagsImploded
  * @property Artist $Artist
  * @property string $ImageUrl
  * @property string $ThumbUrl
+ * @property string $Thumb2xUrl
  * @property string $ImageSize
  * @property Ebook $Ebook
- * @property ImageMimeType $MimeType
+ * @property ?ImageMimeType $MimeType
  */
 class Artwork extends PropertiesBase{
 	public $Name;
@@ -38,6 +38,11 @@ class Artwork extends PropertiesBase{
 	public $Status;
 	public $EbookWwwFilesystemPath;
 	public $ReviewerUserId;
+	public $MuseumUrl;
+	public $PublicationYear;
+	public $PublicationYearPageUrl;
+	public $CopyrightPageUrl;
+	public $ArtworkPageUrl;
 	protected $_UrlName;
 	protected $_Url;
 	protected $_AdminUrl;
@@ -49,12 +54,6 @@ class Artwork extends PropertiesBase{
 	protected $_ImageSize = null;
 	protected $_Ebook = null;
 	protected ?ImageMimeType $_MimeType = null;
-
-	public $MuseumUrl;
-	public $PublicationYear;
-	public $PublicationYearPageUrl;
-	public $CopyrightPageUrl;
-	public $ArtworkPageUrl;
 
 	// *******
 	// GETTERS
@@ -104,10 +103,10 @@ class Artwork extends PropertiesBase{
 		return $this->_ArtworkTags;
 	}
 
-	protected function GetArtworkTagsImploded(): string{
+	public function GetArtworkTagsImploded(): string{
 		$tags = $this->ArtworkTags ?? [];
 		$tags = array_column($tags, 'Name');
-		return implode(', ', $tags);
+		return trim(implode(', ', $tags));
 	}
 
 	/**
@@ -397,7 +396,7 @@ class Artwork extends PropertiesBase{
 			        ?)
 		', [$this->Artist->ArtistId, $this->Name, $this->UrlName, $this->CompletedYear, $this->CompletedYearIsCirca,
 				$this->Created, $this->Status, $this->ReviewerUserId, $this->MuseumUrl, $this->PublicationYear, $this->PublicationYearPageUrl,
-				$this->CopyrightPageUrl, $this->ArtworkPageUrl, $this->EbookWwwFilesystemPath, $this->MimeType->value]
+				$this->CopyrightPageUrl, $this->ArtworkPageUrl, $this->EbookWwwFilesystemPath, $this->MimeType->value ?? null]
 		);
 
 		$this->ArtworkId = Db::GetLastInsertedId();
@@ -417,8 +416,8 @@ class Artwork extends PropertiesBase{
 		// Generate the thumbnails
 		try{
 			$image = new Image($imageUploadPath);
-			$image->Resize(WEB_ROOT . $this->ThumbUrl, COVER_THUMBNAIL_WIDTH, COVER_THUMBNAIL_HEIGHT, $this->MimeType);
-			$image->Resize(WEB_ROOT . $this->Thumb2xUrl, COVER_THUMBNAIL_WIDTH * 2, COVER_THUMBNAIL_HEIGHT * 2, $this->MimeType);
+			$image->Resize(WEB_ROOT . $this->ThumbUrl, COVER_THUMBNAIL_WIDTH, COVER_THUMBNAIL_HEIGHT);
+			$image->Resize(WEB_ROOT . $this->Thumb2xUrl, COVER_THUMBNAIL_WIDTH * 2, COVER_THUMBNAIL_HEIGHT * 2);
 		}
 		catch(\Safe\Exceptions\FilesystemException | \Safe\Exceptions\ImageException){
 			throw new Exceptions\InvalidImageUploadException('Failed to generate thumbnail.');
@@ -453,7 +452,7 @@ class Artwork extends PropertiesBase{
 			ArtworkId = ?
 		', [$this->Artist->ArtistId, $this->Name, $this->UrlName, $this->CompletedYear, $this->CompletedYearIsCirca,
 				$this->Created, $this->Status, $this->ReviewerUserId, $this->MuseumUrl, $this->PublicationYear, $this->PublicationYearPageUrl,
-				$this->CopyrightPageUrl, $this->ArtworkPageUrl, $this->EbookWwwFilesystemPath, $this->MimeType->value,
+				$this->CopyrightPageUrl, $this->ArtworkPageUrl, $this->EbookWwwFilesystemPath, $this->MimeType->value ?? null,
 				$this->ArtworkId]
 		);
 	}
@@ -535,7 +534,7 @@ class Artwork extends PropertiesBase{
 	/**
 	 * @throws \Exceptions\InvalidArtworkException
 	 */
-	public static function GetByUrl(string $artistUrlName, string $artworkUrlName): ?Artwork{
+	public static function GetByUrl(string $artistUrlName, string $artworkUrlName): Artwork{
 		$result = Db::Query('
 				SELECT Artworks.*
 				from Artworks
@@ -557,7 +556,7 @@ class Artwork extends PropertiesBase{
 	/**
 	 * @throws \Exceptions\InvalidArtworkException
 	 */
-	public static function GetByUrlAndIsApproved(string $artistUrlName, string $artworkUrlName): ?Artwork{
+	public static function GetByUrlAndIsApproved(string $artistUrlName, string $artworkUrlName): Artwork{
 		$result = Db::Query('
 				SELECT Artworks.*
 				from Artworks

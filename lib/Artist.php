@@ -115,7 +115,7 @@ class Artist extends PropertiesBase{
 	/**
 	 * @throws \Exceptions\ValidationException
 	 */
-	public static function GetOrCreate($artist): Artist{
+	public static function GetOrCreate(Artist $artist): Artist{
 		$result = Db::Query('
 			SELECT *
 			FROM Artists

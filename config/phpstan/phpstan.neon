@@ -31,3 +31,5 @@ parameters:
 	earlyTerminatingMethodCalls:
 		Template:
 			- Emit404
+			- Emit403
+			- RedirectToLogin

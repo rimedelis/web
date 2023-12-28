@@ -57,12 +57,20 @@ catch(Exceptions\InvalidPermissionsException){
 
 		<? if($status == COVER_ARTWORK_STATUS_APPROVED){ ?>
 		<p class="message success">
-			<i><a href="<?= $artwork->Url ?>" property="schema:name"><?= Formatter::ToPlainText($artwork->Name) ?></a></i> approved.
+			<? if($artwork !== null){ ?>
+				<i><a href="<?= $artwork->Url ?>" property="schema:name"><?= Formatter::ToPlainText($artwork->Name) ?></a></i> approved.
+			<? }else{ ?>
+				Artwork approved.
+			<? } ?>
 		</p>
 		<? } ?>
 		<? if($status == COVER_ARTWORK_STATUS_DECLINED){ ?>
 		<p class="message">
-			<i><?= Formatter::ToPlainText($artwork->Name) ?></i> declined.
+			<? if($artwork !== null){ ?>
+				<i><?= Formatter::ToPlainText($artwork->Name) ?></i> declined.
+			<? }else{ ?>
+				Artwork declined.
+			<? } ?>
 		</p>
 		<? } ?>
 		<? if(sizeof($unverifiedArtworks) == 0){ ?>

@@ -1,22 +1,25 @@
 <?
+use function Safe\imagecopyresampled;
+use function Safe\imagecreatetruecolor;
+use function Safe\imagejpeg;
+use function Safe\getimagesize;
 use function Safe\unlink;
 
 class Image{
 	public $Path;
 	public $MimeType;
 
-	public function __construct($path){
+	public function __construct(string $path){
 		$this->Path = $path;
 		$this->MimeType = ImageMimeType::FromFile($path);
 	}
 
 	/**
-	 * @return resource
+	 * @return GdImage
 	 * @throws \Safe\Exceptions\ImageException
+	 * @throws Exceptions\InvalidImageUploadException
 	 */
 	private function GetImageHandle(){
-		$handle = null;
-
 		switch($this->MimeType){
 			case ImageMimeType::JPG:
 				$handle = \Safe\imagecreatefromjpeg($this->Path);
@@ -30,13 +33,15 @@ class Image{
 			case ImageMimeType::TIFF:
 				$handle = $this->GetImageHandleFromTiff();
 				break;
+			default:
+				throw new \Exceptions\InvalidImageUploadException();
 		}
 
 		return $handle;
 	}
 
 	/**
-	 * @return resource
+	 * @return GdImage
 	 * @throws \Exceptions\InvalidImageUploadException
 	 */
 	private function GetImageHandleFromTiff(){
