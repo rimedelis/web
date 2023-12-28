@@ -2,5 +2,5 @@
 namespace Exceptions;
 
 class TagsRequiredException extends AppException{
-	protected $message = 'Tags required';
+	protected $message = 'At least one tag is required.';
 }

@@ -81,6 +81,7 @@ if($artworkName === null){
 
 $artistUrlName = Formatter::MakeUrlSafe($artistName);
 $artworkUrlName = Formatter::MakeUrlSafe($artworkName);
+$artwork = null;
 
 if($verbose){
 	print("artistName: $artistName\n");
@@ -90,7 +91,12 @@ if($verbose){
 	print("artworkUrlName: $artworkUrlName\n");
 }
 
-$artwork = Artwork::GetByUrlPath($artistUrlName, $artworkUrlName);
+try{
+	$artwork = Artwork::GetByUrlAndIsApproved($artistUrlName, $artworkUrlName);
+}
+catch(Exceptions\ArtworkNotFoundException){
+	// $artwork is null by default, just continue
+}
 
 if($artwork === null){
 	if($verbose){
@@ -113,7 +119,7 @@ if($artwork === null){
 	$artwork->Created = new DateTime();
 	$artwork->Status = COVER_ARTWORK_STATUS_IN_USE;
 	$artwork->EbookWwwFilesystemPath = $ebookWwwFilesystemPath;
-	$artwork->MimeType = ArtworkMimeType::JPG;
+	$artwork->MimeType = ImageMimeType::JPG;
 
 	$coverSourceFile = tempnam($workDir, 'cover.source.');
 	// Search for JPEG, PNG, and TIFF source files, in that order.

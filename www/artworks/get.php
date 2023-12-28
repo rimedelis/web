@@ -1,10 +1,11 @@
 <?
-$artistUrlName = HttpInput::Str(GET, 'artist') ?? '';
-$artworkUrlName = HttpInput::Str(GET, 'artwork') ?? '';
+try{
+	$artistUrlName = HttpInput::Str(GET, 'artist') ?? '';
+	$artworkUrlName = HttpInput::Str(GET, 'artwork') ?? '';
 
-$artwork = Artwork::GetByUrlPath($artistUrlName, $artworkUrlName);
-
-if($artwork === null){
+	$artwork = Artwork::GetByUrlAndIsApproved($artistUrlName, $artworkUrlName);
+}
+catch(Exceptions\ArtworkNotFoundException){
 	Template::Emit404();
 }
 

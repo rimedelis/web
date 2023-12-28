@@ -4,28 +4,50 @@ use function Safe\session_unset;
 
 session_start();
 
-$successMessage = $_SESSION['success-message'] ?? null;
-
-if($successMessage){
-	http_response_code(201);
-	session_unset();
-}
+$created = HttpInput::Bool(SESSION, 'artwork-created', false);
+$exception = $_SESSION['exception'] ?? null;
 
 /** @var Artwork $artwork */
 $artwork = $_SESSION['artwork'] ?? new Artwork();
-$artist = $artwork->Artist ?? new Artist();
 
-$exception = $_SESSION['exception'] ?? null;
+try{
+	if($GLOBALS['User'] === null){
+		throw new Exceptions\LoginRequiredException();
+	}
 
-if($exception){
-	http_response_code(422);
-	session_unset();
+	if(!$GLOBALS['User']->Benefits->CanUploadArtwork){
+		throw new Exceptions\InvalidPermissionsException();
+	}
+
+	// We got here because an artwork was successfully submitted
+	if($created){
+		http_response_code(201);
+		$artwork = new Artwork();
+		$artwork->Artists = new Artist();
+		session_unset();
+	}
+
+	// We got here because an artwork submission had errors and the user has to try again
+	if($exception){
+		http_response_code(422);
+		session_unset();
+	}
+
+	if($artwork->Artist === null){
+		$artwork->Artist = new Artist();
+	}
+}
+catch(Exceptions\LoginRequiredException){
+	Template::RedirectToLogin();
+}
+catch(Exceptions\InvalidPermissionsException){
+	Template::Emit403(); // No permissions to submit artwork
 }
 
 ?>
 <?= Template::Header(
 	[
-		'title' => 'Submit Artwork',
+		'title' => 'Submit an Artwork',
 		'artwork' => true,
 		'highlight' => '',
 		'description' => 'Submit public domain artwork to the database for use as cover art.'
@@ -33,36 +55,32 @@ if($exception){
 ) ?>
 <main>
 	<section class="narrow">
-		<hgroup>
-			<h1>Submit Artwork</h1>
-			<h2></h2>
-		</hgroup>
+		<h1>Submit an Artwork</h1>
 
 		<?= Template::Error(['exception' => $exception]) ?>
 
-		<? if($successMessage){ ?>
-			<p class="message success">
-				<?= Formatter::ToPlainText($successMessage) ?>
-			</p>
+		<? if($created){ ?>
+			<p class="message success">Artwork submitted for review!</p>
 		<? } ?>
 
 		<form method="post" action="/artworks" enctype="multipart/form-data">
 			<fieldset>
-				<legend>Artist Details</legend>
+				<legend>Artist details</legend>
+				<p>If selecting an existing artist, leave the year of death blank.</p>
 				<div>
 					<label>
-						Artist Name
+						Artist name
 						<datalist id="artist-names">
-							<?php foreach (Artist::GetAll() as $existingArtist): ?>
+							<? foreach(Library::GetAllArtists() as $existingArtist){ ?>
 								<option value="<?= Formatter::ToPlainText($existingArtist->Name) ?>"><?= Formatter::ToPlainText($existingArtist->Name) ?>, d. <? if($existingArtist->DeathYear !== null){ ?><?= $existingArtist->DeathYear ?><? }else{ ?>(unknown)<? } ?></option>
-							<?php endforeach; ?>
+							<? } ?>
 						</datalist>
 						<input
 							type="text"
 							name="artist-name"
 							list="artist-names"
 							required="required"
-							value="<?= Formatter::ToPlainText($artist->Name) ?>"
+							value="<?= Formatter::ToPlainText($artwork->Artist->Name) ?>"
 						/>
 					</label>
 					<label>
@@ -72,16 +90,16 @@ if($exception){
 							name="artist-year-of-death"
 							min="1"
 							max="<?= gmdate('Y') ?>"
-							value="<?= $artist->DeathYear ?>"
+							value="<?= $artwork->Artist->DeathYear ?>"
 						/>
 					</label>
 				</div>
 			</fieldset>
 			<fieldset>
-				<legend>Artwork Details</legend>
+				<legend>Artwork details</legend>
 				<div>
 					<label>
-						Artwork Name
+						Artwork name
 						<input type="text" name="artwork-name" required="required"
 						       value="<?= Formatter::ToPlainText($artwork->Name) ?>"/>
 					</label>
@@ -106,18 +124,19 @@ if($exception){
 					</label>
 				</div>
 				<label>
-					Artwork Tags
+					Tags
 					<input
 						type="text"
 						name="artwork-tags"
-						placeholder="tags, comma-separated"
+						placeholder="A list of comma-separated tags"
 						required="required"
 						value="<?= Formatter::ToPlainText($artwork->ArtworkTagsImploded) ?>"
 					/>
 				</label>
 			</fieldset>
 			<fieldset id="pd-proof">
-				<legend>Proof of Public Domain Status</legend>
+				<legend>Proof of U.S. public domain status</legend>
+				<p>See the <a href="/manual/latest/10-art-and-images#10.3.3.7">US-PD clearance section of the <abbr class="acronym">SEMoS</abbr></a> for details.</p>
 				<p>PD proof must take the form of:</p>
 				<fieldset>
 					<label>
@@ -168,8 +187,8 @@ if($exception){
 						/>
 					</label>
 				</fieldset>
-				<p>See the <a href="/manual/latest/10-art-and-images#10.3.3.7">US-PD clearance section of the <abbr class="acronym">SEMoS</abbr></a> for details.</p>
 			</fieldset>
+			<? if(false){ ?>
 			<fieldset>
 				<legend></legend>
 				<div>
@@ -185,7 +204,9 @@ if($exception){
 					/>
 				</div>
 			</fieldset>
+			<? } ?>
 			<fieldset>
+				<legend>Image file</legend>
 				<div>
 					<label for="input-color-upload" class="file-upload">
 						Attach file
@@ -195,12 +216,14 @@ if($exception){
 							name="color-upload"
 							id="input-color-upload"
 							required="required"
-							accept="<?= implode(",", ArtworkMimeType::Values()) ?>"
+							accept="<?= implode(",", ImageMimeType::Values()) ?>"
 						/>
 					</label>
-					<button>Submit</button>
 				</div>
 			</fieldset>
+			<div class="footer">
+				<button>Submit</button>
+			</div>
 		</form>
 	</section>
 </main>

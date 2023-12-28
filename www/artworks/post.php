@@ -1,35 +1,19 @@
 <? /** @noinspection PhpIncludeInspection */
 
+use Exceptions\InvalidRequestException;
+
 use function Safe\ini_get;
 use function Safe\substr;
 
-function post_max_size_bytes(): int{
-	$post_max_size = ini_get('post_max_size');
-	$unit = substr($post_max_size, -1);
-	$size = (int) substr($post_max_size, 0, -1);
-
-	return match ($unit){
-		'g', 'G' => $size * 1024 * 1024 * 1024,
-		'm', 'M' => $size * 1024 * 1024,
-		'k', 'K' => $size * 1024,
-		default => $size
-	};
-}
-
-if(HttpInput::RequestMethod() != HTTP_POST){
-	http_response_code(405);
-	exit();
-}
-
-session_start();
-
 try{
-	if(empty($_POST) || empty($_FILES)){
-		if($_SERVER['CONTENT_LENGTH'] > post_max_size_bytes()){
-			throw new \Exceptions\InvalidRequestException('Request too large (maximum ' . ini_get('upload_max_filesize') . ')');
-		}else{
-			throw new \Exceptions\InvalidRequestException();
-		}
+	session_start();
+
+	if(HttpInput::RequestMethod() != HTTP_POST){
+		throw new InvalidRequestException('Only HTTP POST accepted.');
+	}
+
+	if(HttpInput::IsRequestTooLarge()){
+		throw new Exceptions\InvalidRequestException('File upload too large.');
 	}
 
 	$artwork = new Artwork();
@@ -48,27 +32,30 @@ try{
 	$artwork->CopyrightPageUrl = HttpInput::Str(POST, 'pd-proof-copyright-page-url', false);
 	$artwork->ArtworkPageUrl = HttpInput::Str(POST, 'pd-proof-artwork-page-url', false);
 	$artwork->MuseumUrl = HttpInput::Str(POST, 'pd-proof-museum-url', false);
-	$artwork->MimeType = ArtworkMimeType::FromUploadedFile($_FILES['color-upload']);
+	$artwork->MimeType = ImageMimeType::FromFile($_FILES['color-upload']['tmp_name']);
 
-	$expectCaptcha = HttpInput::Str(SESSION, 'captcha', false);
-	$actualCaptcha = HttpInput::Str(POST, 'captcha', false);
+	// $expectCaptcha = HttpInput::Str(SESSION, 'captcha', false);
+	// $actualCaptcha = HttpInput::Str(POST, 'captcha', false);
 
-	if($expectCaptcha === null || $actualCaptcha === null || mb_strtolower($expectCaptcha) !== mb_strtolower($actualCaptcha)){
-		throw new Exceptions\InvalidCaptchaException();
-	}
+	// if($expectCaptcha === null || $actualCaptcha === null || mb_strtolower($expectCaptcha) !== mb_strtolower($actualCaptcha)){
+	// 	throw new Exceptions\InvalidCaptchaException();
+	// }
 
 	$artwork->Create($_FILES['color-upload']);
 
-	$_SESSION['success-message'] = '“' . $artwork->Name . '” submitted successfully!';
+	$_SESSION['artwork'] = $artwork;
+	$_SESSION['artwork-created'] = true;
+
+	http_response_code(303);
+	header('Location: /artworks/new');
 }
-catch(\Exceptions\AppException $exception){
+catch(Exceptions\InvalidRequestException){
+	http_response_code(405);
+}
+catch(Exceptions\AppException $exception){
+	$_SESSION['artwork'] = $artwork;
 	$_SESSION['exception'] = $exception;
 
-	if(isset($artwork)){
-		$_SESSION['artwork'] = $artwork;
-	}
-}
-finally{
 	http_response_code(303);
 	header('Location: /artworks/new');
 }

@@ -2,5 +2,5 @@
 namespace Exceptions;
 
 class MissingEbookException extends AppException{
-	protected $message = 'Status `in_use` requires EbookWwwFilesystemPath.';
+	protected $message = 'Artwork marked as “in use”, but the ebook couldn’t be found in the filesystem.';
 }

@@ -9,7 +9,7 @@ $colorScheme = $_COOKIE['color-scheme'] ?? 'auto';
 $isXslt = $isXslt ?? false;
 $feedUrl = $feedUrl ?? null;
 $feedTitle = $feedTitle ?? '';
-$is404 = $is404 ?? false;
+$isErrorPage = $isErrorPage ?? false;
 
 // As of Sep 2022, all versions of Safari have a bug where if the page is served as XHTML,
 // then <picture> elements download all <source>s instead of the first supported match.
@@ -71,7 +71,7 @@ if(!$isXslt){
 	<? } ?>
 	<link rel="search" href="/ebooks" type="application/xhtml+xml; charset=utf-8"/>
 	<link rel="search" href="/ebooks/opensearch" type="application/opensearchdescription+xml; charset=utf-8"/>
-	<? if(!$is404){ ?>
+	<? if(!$isErrorPage){ ?>
 	<meta content="#394451" name="theme-color"/>
 	<meta content="<? if($title != ''){ ?><?= Formatter::ToPlainText($title) ?><? }else{ ?>Standard Ebooks<? } ?>" property="og:title"/>
 	<meta content="<?= $ogType ?? 'website' ?>" property="og:type"/>

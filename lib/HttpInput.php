@@ -21,6 +21,29 @@ class HttpInput{
 		return HTTP_GET;
 	}
 
+	public static function GetMaxPostSize(): int{ // bytes
+		$post_max_size = ini_get('post_max_size');
+		$unit = substr($post_max_size, -1);
+		$size = (int) substr($post_max_size, 0, -1);
+
+		return match ($unit){
+			'g', 'G' => $size * 1024 * 1024 * 1024,
+			'm', 'M' => $size * 1024 * 1024,
+			'k', 'K' => $size * 1024,
+			default => $size
+		};
+	}
+
+	public static function IsRequestTooLarge(): bool{
+		if(empty($_POST) || empty($_FILES)){
+			if($_SERVER['CONTENT_LENGTH'] > self::GetMaxPostSize()){
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public static function RequestType(): int{
 		return preg_match('/\btext\/html\b/ius', $_SERVER['HTTP_ACCEPT'] ?? '') ? WEB : REST;
 	}

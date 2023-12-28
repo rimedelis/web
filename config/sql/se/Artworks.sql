@@ -1,5 +1,5 @@
 CREATE TABLE `Artworks` (
-  `ArtworkId` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `ArtworkId` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `ArtistId` int(10) unsigned NOT NULL,
   `Name` varchar(255) NOT NULL,
   `UrlName` varchar(255) NOT NULL,
@@ -8,6 +8,7 @@ CREATE TABLE `Artworks` (
   `Created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `Updated` timestamp NOT NULL,
   `Status` enum('unverified', 'approved', 'declined', 'in_use') DEFAULT 'unverified',
+  `ReviewerUserId` int(10) unsigned NULL,
   `MuseumUrl` varchar(255) NULL,
   `PublicationYear` smallint unsigned NULL,
   `PublicationYearPageUrl` varchar(255) NULL,

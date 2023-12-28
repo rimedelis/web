@@ -34,6 +34,12 @@ class Template{
 		}
 	}
 
+	public static function Emit403(): void{
+		http_response_code(403);
+		include(WEB_ROOT . '/403.php');
+		exit();
+	}
+
 	public static function Emit404(): void{
 		http_response_code(404);
 		include(WEB_ROOT . '/404.php');

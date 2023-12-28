@@ -55,20 +55,21 @@ class ArtworkTag extends PropertiesBase{
 	/**
 	 * @throws \Exceptions\ValidationException
 	 */
-	public function GetOrCreate(): void{
-		$this->Validate();
+	public static function GetOrCreate($artworkTag): ArtworkTag{
+		$artworkTag->Validate();
 
 		$result = Db::Query('
 				SELECT *
 				from Tags
 				where Name = ?
-			', [$this->Name], 'ArtworkTag');
+			', [$artworkTag->Name], 'ArtworkTag');
 
 		if(isset($result[0])){
-			$this->TagId = $result[0]->TagId;
-			return;
+			return $result[0];
 		}
-
-		$this->Create();
+		else{
+			$artworkTag->Create();
+			return $artworkTag;
+		}
 	}
 }

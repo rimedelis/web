@@ -4,7 +4,7 @@ use function Safe\preg_replace;
 $page = HttpInput::Int(GET, 'page') ?? 1;
 $perPage = HttpInput::Int(GET, 'per-page') ?? COVER_ARTWORK_PER_PAGE;
 $query = HttpInput::Str(GET, 'query', false) ?? '';
-$status = HttpInput::Str(GET, 'status', false) ?? COVER_ARTWORK_STATUS_ALL;
+$status = HttpInput::Str(GET, 'status', false) ?? null;
 $sort = HttpInput::Str(GET, 'sort', false);
 $pages = 0;
 $totalArtworkCount = 0;
@@ -28,10 +28,6 @@ if($sort !== null){
 
 if($sort === 'created-newest'){
 	$sort = null;
-}
-
-if($status === COVER_ARTWORK_STATUS_ALL){
-	$status = null;
 }
 
 $artworks = Library::FilterArtwork($query != '' ? $query : null, $status, $sort);
@@ -67,9 +63,7 @@ $queryString = preg_replace('/^&amp;/ius', '', $queryString);
 ?><?= Template::Header(['title' => $pageTitle, 'artwork' => true, 'description' => $pageDescription]) ?>
 <main class="artworks">
 	<section class="narrow">
-		<hgroup>
-			<h1>Browse Artwork</h1>
-		</hgroup>
+		<h1>Browse Artwork</h1>
 
 	<?= Template::ArtworkSearchForm(['query' => $query, 'status' => $status, 'sort' => $sort, 'perPage' => $perPage]) ?>
 

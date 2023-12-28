@@ -133,7 +133,7 @@ ol.artwork-list.list > li.in_use{
 	background-image: url("/images/stripes.svg");
 }
 
-ol.artwork-list.list > li + li {
+ol.artwork-list.list > li + li{
 	margin-top: 1rem;
 }
 
@@ -219,34 +219,39 @@ main.artworks nav ol li a:hover{
 	max-width: calc(100% - 2rem);
 }
 
-form[action="/artworks"] > fieldset:not(:first-child) {
+form[action="/artworks"] > fieldset:not(:first-child){
 	margin-top: 1rem;
 }
 
-form[action="/artworks"] #pd-proof > fieldset {
+form[action="/artworks"] div.footer{
+	flex-direction: row-reverse;
+	margin-top: 1rem;
+}
+
+form[action="/artworks"] #pd-proof > fieldset{
 	border-left-color: var(--body-text);
 	border-left-width: 3px;
 	border-left-style: dotted;
 	padding-left: .75rem;
 }
 
-form[action="/artworks"] #pd-proof > p {
+form[action="/artworks"] fieldset p{
 	font-style: italic;
 	margin: .5rem 0;
 	border: none;
 }
 
-form[action="/artworks"] #pd-proof > p:first-of-type {
+form[action="/artworks"] fieldset p:first-of-type{
 	margin-top: 0;
 }
 
-form[action="/artworks"] legend {
+form[action="/artworks"] legend{
 	font-size: 1.2rem;
 	font-weight: bold;
 	margin: 0.5rem 0;
 }
 
-form[action="/artworks"] div {
+form[action="/artworks"] div{
 	display: flex;
 	flex-wrap: wrap;
 	flex-direction: row;
@@ -254,25 +259,29 @@ form[action="/artworks"] div {
 	gap: 1rem;
 }
 
-form[action="/artworks"] div label {
+form[action="/artworks"] label{
+	display: block;
+}
+
+form[action="/artworks"] div label{
 	flex-grow: 1;
 	flex-basis: 100%;
 }
 
-form[action="/artworks"] div label:nth-of-type(1) {
+form[action="/artworks"] div label:nth-of-type(1){
 	flex-grow: 4;
 	flex-shrink: 0;
 	flex-basis: 60%;
 }
 
-form[action="/artworks"] div label:nth-of-type(2) {
+form[action="/artworks"] div label:nth-of-type(2){
 	flex-grow: 1;
 	flex-shrink: 0;
 	flex-basis: 30%;
 }
 
-@media(max-width: 730px) {
-	form[action="/artworks"] div label {
+@media(max-width: 730px){
+	form[action="/artworks"] div label{
 		min-width: 100%;
 	}
 }

@@ -39,7 +39,7 @@ class Artist extends PropertiesBase{
 	 */
 	protected function GetAlternateSpellings(): array{
 		if($this->_AlternateSpellings === null){
-			$this->_AlternateSpellings = array();
+			$this->_AlternateSpellings = [];
 
 			$result = Db::Query('
 					SELECT *
@@ -115,20 +115,20 @@ class Artist extends PropertiesBase{
 	/**
 	 * @throws \Exceptions\ValidationException
 	 */
-	public function GetOrCreate(): void{
-		$this->Validate();
+	public static function GetOrCreate($artist): Artist{
 		$result = Db::Query('
 			SELECT *
 			FROM Artists
 			WHERE UrlName = ?
-		', [$this->UrlName], 'Artist');
+		', [$artist->UrlName], 'Artist');
 
 		if(isset($result[0])){
-			$this->ArtistId = $result[0]->ArtistId;
-			return;
+			return $result[0];
 		}
-
-		$this->Create();
+		else{
+			$artist->Create();
+			return $artist;
+		}
 	}
 
 	public static function FindMatch(string $artistName): ?Artist{
@@ -149,15 +149,5 @@ class Artist extends PropertiesBase{
 			from Artists
 			where ArtistId = ?
 		', [$this->ArtistId]);
-	}
-
-	/**
-	 * @return array<Artist>
-	 */
-	public static function GetAll(): array{
-		return Db::Query('
-			SELECT *
-			FROM Artists
-			ORDER BY Name', [], 'Artist');
 	}
 }

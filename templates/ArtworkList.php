@@ -6,7 +6,7 @@ $useAdminUrl = $useAdminUrl ?? false;
 <ol class="artwork-list list">
 <? foreach($artworks as $artwork){ ?>
 	<? if($useAdminUrl){ ?>
-		<? $url = '/admin/artworks/' . $artwork->ArtworkId; ?>
+		<? $url = $artwork->AdminUrl; ?>
 	<? }else{ ?>
 		<? $url = $artwork->Url; ?>
 	<? } ?>
@@ -14,7 +14,8 @@ $useAdminUrl = $useAdminUrl ?? false;
 		<div class="thumbnail-container">
 			<a href="<?= $url ?>">
 				<picture>
-					<img src="<?= $artwork->ThumbUrl ?>" property="schema:image"/>
+					<source srcset="<?= $artwork->Thumb2xUrl ?> 2x, <?= $artwork->ThumbUrl ?> 1x" type="image/jpg"/>
+					<img src="<?= $artwork->ThumbUrl ?>" alt="" property="schema:image"/>
 				</picture>
 			</a>
 		</div>
@@ -27,7 +28,8 @@ $useAdminUrl = $useAdminUrl ?? false;
 			<p>Year completed: <? if($artwork->CompletedYear === null){ ?>(unknown)<? }else{ ?><?= $artwork->CompletedYear ?><? if($artwork->CompletedYearIsCirca){ ?> (circa)<? } ?><? } ?></p>
 			<p>Status: <?= Template::ArtworkStatus(['artwork' => $artwork]) ?></p>
 			<? if(count($artwork->ArtworkTags) > 0){ ?>
-			<p>Tags: <ul class="tags"><? foreach($artwork->ArtworkTags as $tag){ ?><li><a href="<?= $tag->Url ?>"><?= Formatter::ToPlainText($tag->Name) ?></a></li><? } ?></ul></p>
+			<p>Tags:</p>
+			<ul class="tags"><? foreach($artwork->ArtworkTags as $tag){ ?><li><a href="<?= $tag->Url ?>"><?= Formatter::ToPlainText($tag->Name) ?></a></li><? } ?></ul>
 			<? } ?>
 		</div>
 	</li>

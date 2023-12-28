@@ -77,8 +77,7 @@ class Ebook{
 				$this->RepoFilesystemPath = preg_replace('/\.git$/ius', '', $this->RepoFilesystemPath);
 			}
 			catch(Exception){
-				// We may get an exception from preg_replace if the passed repo wwwFilesystemPath contains invalid UTF8 characters,
-				// which a common injection attack vector
+				// We may get an exception from preg_replace if the passed repo wwwFilesystemPath contains invalid UTF-8 characters, whichis  a common injection attack vector
 				throw new Exceptions\InvalidEbookException('Invalid repo filesystem path: ' . $this->RepoFilesystemPath);
 			}
 		}

@@ -7,7 +7,6 @@ use function Safe\date;
 use function Safe\filesize;
 use function Safe\getimagesize;
 use function Safe\imagecopyresampled;
-use function Safe\imagecreatefromjpeg;
 use function Safe\imagecreatetruecolor;
 use function Safe\imagejpeg;
 use function Safe\ini_get;
@@ -26,7 +25,7 @@ use function Safe\tempnam;
  * @property string $ThumbUrl
  * @property string $ImageSize
  * @property Ebook $Ebook
- * @property ArtworkMimeType $MimeType
+ * @property ImageMimeType $MimeType
  */
 class Artwork extends PropertiesBase{
 	public $Name;
@@ -38,15 +37,18 @@ class Artwork extends PropertiesBase{
 	public $Updated;
 	public $Status;
 	public $EbookWwwFilesystemPath;
+	public $ReviewerUserId;
 	protected $_UrlName;
 	protected $_Url;
+	protected $_AdminUrl;
 	protected $_ArtworkTags = null;
 	protected $_Artist = null;
 	protected $_ImageUrl = null;
 	protected $_ThumbUrl = null;
+	protected $_Thumb2xUrl = null;
 	protected $_ImageSize = null;
 	protected $_Ebook = null;
-	protected ?ArtworkMimeType $_MimeType = null;
+	protected ?ImageMimeType $_MimeType = null;
 
 	public $MuseumUrl;
 	public $PublicationYear;
@@ -58,9 +60,6 @@ class Artwork extends PropertiesBase{
 	// GETTERS
 	// *******
 
-	/**
-	 * @return string
-	 */
 	protected function GetUrlName(): string{
 		if($this->Name === null || $this->Name == ''){
 			return '';
@@ -73,15 +72,20 @@ class Artwork extends PropertiesBase{
 		return $this->_UrlName;
 	}
 
-	/**
-	 * @return string
-	 */
 	protected function GetUrl(): string{
 		if($this->_Url === null){
 			$this->_Url = '/artworks/' . $this->Artist->UrlName . '/' . $this->UrlName;
 		}
 
 		return $this->_Url;
+	}
+
+	protected function GetAdminUrl(): string{
+		if($this->_AdminUrl === null){
+			$this->_AdminUrl = '/admin/artworks/' . $this->ArtworkId;
+		}
+
+		return $this->_AdminUrl;
 	}
 
 	/**
@@ -122,23 +126,32 @@ class Artwork extends PropertiesBase{
 	}
 
 	/**
-	 * @throws \Exceptions\InvalidArtworkException
+	 * @throws \Exceptions\ArtworkNotFoundException
 	 */
 	protected function GetThumbUrl(): string{
 		if($this->_ThumbUrl === null){
 			if($this->ArtworkId === null){
-				throw new Exceptions\InvalidArtworkException();
+				throw new Exceptions\ArtworkNotFoundException();
 			}
 
-			$this->_ThumbUrl = COVER_ART_UPLOAD_PATH . $this->ArtworkId . '.thumb.jpg';
+			$this->_ThumbUrl = COVER_ART_UPLOAD_PATH . $this->ArtworkId . '-thumb.jpg';
 		}
 
 		return $this->_ThumbUrl;
 	}
 
-	/**
-	 * @throws \Exceptions\InvalidArtworkException
-	 */
+	protected function GetThumb2xUrl(): string{
+		if($this->_Thumb2xUrl === null){
+			if($this->ArtworkId === null){
+				throw new Exceptions\ArtworkNotFoundException();
+			}
+
+			$this->_Thumb2xUrl = COVER_ART_UPLOAD_PATH . $this->ArtworkId . '-thumb@2x.jpg';
+		}
+
+		return $this->_Thumb2xUrl;
+	}
+
 	protected function GetImageSize(): string{
 		try{
 			$bytes = @filesize(WEB_ROOT . $this->ImageUrl);
@@ -162,21 +175,16 @@ class Artwork extends PropertiesBase{
 	}
 
 	protected function GetEbook(): ?Ebook{
-		if($this->EbookWwwFilesystemPath !== null){
-			try{
-				$key = 'ebook-' . $this->EbookWwwFilesystemPath;
-				$this->_Ebook = apcu_exists($key) ? apcu_fetch($key) : null;
-			}
-			catch(Safe\Exceptions\ApcuException){
-				// The Ebook with that filesystem path isn't cached.
-			}
+		if($this->_Ebook === null){
+			$this->_Ebook = Library::GetEbook($this->EbookWwwFilesystemPath);
 		}
+
 		return $this->_Ebook;
 	}
 
-	protected function SetMimeType(null|string|ArtworkMimeType $mimeType): void{
+	protected function SetMimeType(null|string|ImageMimeType $mimeType): void{
 		if(is_string($mimeType)){
-			$this->_MimeType = ArtworkMimeType::tryFrom($mimeType);
+			$this->_MimeType = ImageMimeType::tryFrom($mimeType);
 		}
 		else{
 			$this->_MimeType = $mimeType;
@@ -225,7 +233,7 @@ class Artwork extends PropertiesBase{
 		}
 
 		if($this->Status !== null && !in_array($this->Status, [COVER_ARTWORK_STATUS_UNVERIFIED, COVER_ARTWORK_STATUS_APPROVED, COVER_ARTWORK_STATUS_DECLINED, COVER_ARTWORK_STATUS_IN_USE])){
-			$error->Add(new Exceptions\InvalidArtworkException());
+			$error->Add(new Exceptions\InvalidArtworkException('Invalid status.'));
 		}
 
 		if($this->Status === COVER_ARTWORK_STATUS_IN_USE && $this->EbookWwwFilesystemPath === null){
@@ -244,7 +252,7 @@ class Artwork extends PropertiesBase{
 		}
 
 		foreach($this->ArtworkTags as $tag){
-			if(strlen($tag->Name) > COVER_ARTWORK_MAX_STRING_LENGTH) {
+			if(strlen($tag->Name) > COVER_ARTWORK_MAX_STRING_LENGTH){
 				$error->Add(new Exceptions\StringTooLongException('Artwork Tag: '. $tag->Name));
 			}
 		}
@@ -299,13 +307,14 @@ class Artwork extends PropertiesBase{
 		}
 
 		// Check for existing Artwork objects with the same URL but different Artwork IDs.
-		$existingArtwork = Artwork::LookupExistingArtwork($this->Artist->UrlName, $this->UrlName);
-		if($existingArtwork !== null && ($existingArtwork->ArtworkId !== $this->ArtworkId)){
-			$url = '';
-			if(in_array($existingArtwork->Status, [COVER_ARTWORK_STATUS_APPROVED, COVER_ARTWORK_STATUS_IN_USE])){
-				$url = SITE_URL . $existingArtwork->Url;
-			}
-			$error->Add(new Exceptions\ArtworkAlreadyExistsException($url));
+		try{
+			$existingArtwork = Artwork::GetByUrl($this->Artist->UrlName, $this->UrlName);
+
+			// Duplicate found, alert the user
+			$error->Add(new Exceptions\ArtworkAlreadyExistsException());
+		}
+		catch(Exceptions\ArtworkNotFoundException){
+			// No duplicates found, continue
 		}
 
 		if(!is_writable(WEB_ROOT . COVER_ART_UPLOAD_PATH)){
@@ -322,17 +331,9 @@ class Artwork extends PropertiesBase{
 				};
 				$error->Add(new Exceptions\InvalidImageUploadException($message));
 			}
-			else{
-				$uploadPath = $uploadedFile['tmp_name'];
-				$thumbPath = tempnam(sys_get_temp_dir(), 'tmp-thumb-');
-				$uploadedFile['thumbPath'] = $thumbPath;
-				try{
-					chmod($thumbPath, 0644);
-					self::GenerateThumbnail($uploadPath, $thumbPath, $this->MimeType);
-				}
-				catch(\Safe\Exceptions\FilesystemException | \Safe\Exceptions\ImageException $exception){
-					$error->Add(new Exceptions\InvalidImageUploadException('Failed to generate thumbnail.'));
-				}
+
+			if(!is_uploaded_file($uploadedFile['tmp_name'])){
+				throw new Exceptions\InvalidImageUploadException();
 			}
 		}
 
@@ -341,70 +342,9 @@ class Artwork extends PropertiesBase{
 		}
 	}
 
-	/**
-         * Looks up an existing artwork regardless of status (unlike GetByUrlPath()) in order to
-         * enforce that the Artist UrlName + Artwork UrlName combo is globally unique.
-         */
-	private static function LookupExistingArtwork(string $artistUrlName, string $artworkUrlName): ?Artwork{
-		$result = Db::Query('
-				SELECT Artworks.*
-				from Artworks
-				inner join Artists using (ArtistId)
-				where Artists.UrlName = ? and Artworks.UrlName = ?
-			', [$artistUrlName, $artworkUrlName], 'Artwork');
-
-		if(sizeof($result) == 0){
-			return null;
-		}
-
-		return $result[0];
-	}
-
-	// ***********
-	// ORM METHODS
-	// ***********
-
-	public static function Get(?int $artworkId): Artwork{
-		if($artworkId === null){
-			throw new Exceptions\InvalidArtworkException();
-		}
-
-		$result = Db::Query('
-				SELECT *
-				from Artworks
-				where ArtworkId = ?
-			', [$artworkId], 'Artwork');
-
-		if(sizeof($result) == 0){
-			throw new Exceptions\InvalidArtworkException();
-		}
-
-		return $result[0];
-	}
-
-	/**
-         * Gets a publically available Artwork, i.e., with approved or in_use status.
-         * Artwork with status unverifed and declined aren't available by URL.
-         */
-	public static function GetByUrlPath(string $artistUrlName, string $artworkUrlName): ?Artwork{
-		$result = Db::Query('
-				SELECT Artworks.*
-				from Artworks
-				inner join Artists using (ArtistId)
-				where Status in ("approved", "in_use") and
-				Artists.UrlName = ? and Artworks.UrlName = ?
-			', [$artistUrlName, $artworkUrlName], 'Artwork');
-
-		if(sizeof($result) == 0){
-			return null;
-		}
-
-		return $result[0];
-	}
-
 	/** @return array<ArtworkTag> */
 	public static function ParseArtworkTags(?string $artworkTags): array{
-		if(!$artworkTags) return array();
+		if(!$artworkTags) return [];
 
 		$artworkTags = array_map('trim', explode(',', $artworkTags));
 		$artworkTags = array_values(array_filter($artworkTags));
@@ -426,16 +366,22 @@ class Artwork extends PropertiesBase{
 		$this->Validate($uploadedFile);
 		$this->Created = new DateTime();
 
-		foreach($this->ArtworkTags as $artworkTag) {
-			$artworkTag->GetOrCreate();
+		// Can't assign directly to $this->ArtworkTags because it's hidden behind a getter
+		$tags = [];
+		foreach($this->ArtworkTags as $artworkTag){
+			$tags[] = ArtworkTag::GetOrCreate($artworkTag);
 		}
+		$this->ArtworkTags = $tags;
 
-		$this->Artist->GetOrCreate();
+		$this->Artist = Artist::GetOrCreate($this->Artist);
+
 		Db::Query('
-			INSERT INTO Artworks (ArtistId, Name, UrlName, CompletedYear, CompletedYearIsCirca, Created, Status, MuseumUrl,
+			INSERT INTO
+			Artworks (ArtistId, Name, UrlName, CompletedYear, CompletedYearIsCirca, Created, Status, ReviewerUserId, MuseumUrl,
 			                      PublicationYear, PublicationYearPageUrl, CopyrightPageUrl, ArtworkPageUrl,
 			                      EbookWwwFilesystemPath, MimeType)
-			VALUES (?,
+			values (?,
+			        ?,
 			        ?,
 			        ?,
 			        ?,
@@ -450,67 +396,33 @@ class Artwork extends PropertiesBase{
 			        ?,
 			        ?)
 		', [$this->Artist->ArtistId, $this->Name, $this->UrlName, $this->CompletedYear, $this->CompletedYearIsCirca,
-				$this->Created, $this->Status, $this->MuseumUrl, $this->PublicationYear, $this->PublicationYearPageUrl,
+				$this->Created, $this->Status, $this->ReviewerUserId, $this->MuseumUrl, $this->PublicationYear, $this->PublicationYearPageUrl,
 				$this->CopyrightPageUrl, $this->ArtworkPageUrl, $this->EbookWwwFilesystemPath, $this->MimeType->value]
 		);
 
 		$this->ArtworkId = Db::GetLastInsertedId();
 
-		if($this->_ArtworkTags !== null){
-			foreach($this->ArtworkTags as $tag){
-				Db::Query('
-					INSERT into ArtworkTags (ArtworkId, TagId)
-					values (?,
-					        ?)
-				', [$this->ArtworkId, $tag->TagId]);
-			}
+		foreach($this->ArtworkTags as $tag){
+			Db::Query('
+				INSERT into ArtworkTags (ArtworkId, TagId)
+				values (?,
+				        ?)
+			', [$this->ArtworkId, $tag->TagId]);
 		}
 
+		// Save the source image
+		$imageUploadPath = $uploadedFile['tmp_name'];
+		copy($imageUploadPath, WEB_ROOT . $this->ImageUrl);
+
+		// Generate the thumbnails
 		try{
-			rename($uploadedFile['thumbPath'], WEB_ROOT . $this->ThumbUrl);
-
-			if(is_uploaded_file($uploadedFile['tmp_name'])){
-				if(!move_uploaded_file($uploadedFile['tmp_name'], WEB_ROOT . $this->ImageUrl)){
-					throw new \Safe\Exceptions\FilesystemException('Failed to save uploaded image.');
-				}
-			}
-			else{
-				copy($uploadedFile['tmp_name'], WEB_ROOT . $this->ImageUrl);
-			}
+			$image = new Image($imageUploadPath);
+			$image->Resize(WEB_ROOT . $this->ThumbUrl, COVER_THUMBNAIL_WIDTH, COVER_THUMBNAIL_HEIGHT, $this->MimeType);
+			$image->Resize(WEB_ROOT . $this->Thumb2xUrl, COVER_THUMBNAIL_WIDTH * 2, COVER_THUMBNAIL_HEIGHT * 2, $this->MimeType);
 		}
-		catch(\Safe\Exceptions\FilesystemException $exception){
-			$log = new Log(ARTWORK_UPLOADS_LOG_FILE_PATH);
-			$log->Write('Failed to store image or thumbnail for uploaded artwork ' . $this->ArtworkId . '.');
-			$log->Write('Temporary image file at ' . $uploadedFile['tmp_name'] . ', temporary thumb file at ' . $uploadedFile['thumbPath'] . '.');
-			$log->Write($exception);
-
-			throw new Exceptions\InvalidImageUploadException('Your artwork was submitted but something went wrong. Please contact site administrator.');
+		catch(\Safe\Exceptions\FilesystemException | \Safe\Exceptions\ImageException){
+			throw new Exceptions\InvalidImageUploadException('Failed to generate thumbnail.');
 		}
-	}
-
-	/**
-	 * @throws \Safe\Exceptions\ImageException
-	 */
-	private static function GenerateThumbnail(string $srcImagePath, string $dstThumbPath, ArtworkMimeType $mimeType): void{
-		$uploadInfo = getimagesize($srcImagePath);
-
-		$src_w = $uploadInfo[0];
-		$src_h = $uploadInfo[1];
-
-		if($src_h > $src_w){
-			$dst_h = COVER_THUMBNAIL_SIZE;
-			$dst_w = intval($dst_h * ($src_w / $src_h));
-		}
-		else{
-			$dst_w = COVER_THUMBNAIL_SIZE;
-			$dst_h = intval($dst_w * ($src_h / $src_w));
-		}
-
-		$srcImage = $mimeType->ImageCreateFromMimeType($srcImagePath);
-		$thumbImage = imagecreatetruecolor($dst_w, $dst_h);
-
-		imagecopyresampled($thumbImage, $srcImage, 0, 0, 0, 0, $dst_w, $dst_h, $src_w, $src_h);
-		imagejpeg($thumbImage, $dstThumbPath);
 	}
 
 	/**
@@ -521,7 +433,7 @@ class Artwork extends PropertiesBase{
 
 		Db::Query('
 			UPDATE Artworks
-			SET
+			set
 			ArtistId = ?,
 			Name = ?,
 			UrlName = ?,
@@ -529,6 +441,7 @@ class Artwork extends PropertiesBase{
 			CompletedYearIsCirca = ?,
 			Created = ?,
 			Status = ?,
+			ReviewerUserId = ?,
 			MuseumUrl = ?,
 			PublicationYear = ?,
 			PublicationYearPageUrl = ?,
@@ -536,10 +449,10 @@ class Artwork extends PropertiesBase{
 			ArtworkPageUrl = ?,
 			EbookWwwFilesystemPath = ?,
 			MimeType = ?
-			WHERE
+			where
 			ArtworkId = ?
 		', [$this->Artist->ArtistId, $this->Name, $this->UrlName, $this->CompletedYear, $this->CompletedYearIsCirca,
-				$this->Created, $this->Status, $this->MuseumUrl, $this->PublicationYear, $this->PublicationYearPageUrl,
+				$this->Created, $this->Status, $this->ReviewerUserId, $this->MuseumUrl, $this->PublicationYear, $this->PublicationYearPageUrl,
 				$this->CopyrightPageUrl, $this->ArtworkPageUrl, $this->EbookWwwFilesystemPath, $this->MimeType->value,
 				$this->ArtworkId]
 		);
@@ -588,5 +501,75 @@ class Artwork extends PropertiesBase{
 		}
 
 		return false;
+	}
+
+	// ***********
+	// ORM METHODS
+	// ***********
+
+	/**
+	 * @throws \Exceptions\ArtworkNotFoundException
+	 */
+	public static function Get(?int $artworkId): Artwork{
+		if($artworkId === null){
+			throw new Exceptions\ArtworkNotFoundException();
+		}
+
+		$result = Db::Query('
+				SELECT *
+				from Artworks
+				where ArtworkId = ?
+			', [$artworkId], 'Artwork');
+
+		if(sizeof($result) == 0){
+			throw new Exceptions\ArtworkNotFoundException();
+		}
+
+		return $result[0];
+	}
+
+	/**
+         * Looks up an existing artwork regardless of status (unlike GetByUrl()) in order to
+         * enforce that the Artist UrlName + Artwork UrlName combo is globally unique.
+         */
+	/**
+	 * @throws \Exceptions\InvalidArtworkException
+	 */
+	public static function GetByUrl(string $artistUrlName, string $artworkUrlName): ?Artwork{
+		$result = Db::Query('
+				SELECT Artworks.*
+				from Artworks
+				inner join Artists using (ArtistId)
+				where Artists.UrlName = ? and Artworks.UrlName = ?
+			', [$artistUrlName, $artworkUrlName], 'Artwork');
+
+		if(sizeof($result) == 0){
+			throw new Exceptions\ArtworkNotFoundException();
+		}
+
+		return $result[0];
+	}
+
+	/**
+         * Gets a publically available Artwork, i.e., with approved or in_use status.
+         * Artwork with status unverifed and declined aren't available by URL.
+         */
+	/**
+	 * @throws \Exceptions\InvalidArtworkException
+	 */
+	public static function GetByUrlAndIsApproved(string $artistUrlName, string $artworkUrlName): ?Artwork{
+		$result = Db::Query('
+				SELECT Artworks.*
+				from Artworks
+				inner join Artists using (ArtistId)
+				where Status in ("approved", "in_use") and
+				Artists.UrlName = ? and Artworks.UrlName = ?
+			', [$artistUrlName, $artworkUrlName], 'Artwork');
+
+		if(sizeof($result) == 0){
+			throw new Exceptions\ArtworkNotFoundException();
+		}
+
+		return $result[0];
 	}
 }

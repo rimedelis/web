@@ -3,78 +3,78 @@ use function Safe\session_unset;
 
 session_start();
 
-$approvedArtworkId = $_SESSION['approved-artwork-id'] ?? null;
-$declinedArtworkId = $_SESSION['declined-artwork-id'] ?? null;
-
-if($approvedArtworkId || $declinedArtworkId){
-	http_response_code(201);
-	session_unset();
-}
-
-$approvedArtwork = null;
-if($approvedArtworkId){
-	$approvedArtwork = Artwork::Get($approvedArtworkId);
-}
-
-$declinedArtwork = null;
-if($declinedArtworkId){
-	$declinedArtwork = Artwork::Get($declinedArtworkId);
-}
-
+$artwork = null;
+$status = HttpInput::Str(SESSION, 'status', false);
 $page = HttpInput::Int(GET, 'page') ?? 1;
-if($page <= 0){
-	$page = 1;
-}
 $perPage = 10;
+$hasNextPage = false;
+$unverifiedArtworks = [];
 
-$unverifiedArtworks = Db::Query('
-				SELECT *
-				from Artworks
-				where status = "unverified"
-				order by Created asc
-			', [], 'Artwork');
-$count = sizeof($unverifiedArtworks);
-$pages = ceil($count / $perPage);
+try{
+	if($GLOBALS['User'] === null){
+		throw new Exceptions\LoginRequiredException();
+	}
 
-$unverifiedArtworks = array_slice($unverifiedArtworks, ($page - 1) * $perPage, $perPage);
+	if(!$GLOBALS['User']->Benefits->CanReviewArtwork){
+		throw new Exceptions\InvalidPermissionsException();
+	}
 
-?><?= Template::Header(['title' => 'Review Artwork Queue', 'artwork' => true, 'highlight' => '', 'description' => 'The queue of unverified artwork.']) ?>
+	if($status !== null){
+		$artwork = Artwork::Get(HttpInput::Int(SESSION, 'artwork-id'));
+
+		http_response_code(201);
+		session_unset();
+	}
+
+	if($page <= 0){
+		$page = 1;
+	}
+
+	$unverifiedArtworks = Db::Query('
+					SELECT *
+					from Artworks
+					where Status = "unverified"
+					order by Created asc
+					limit ?, ?
+				', [($page - 1) * $perPage, $perPage + 1], 'Artwork');
+
+	if(sizeof($unverifiedArtworks) > $perPage){
+		array_pop($unverifiedArtworks);
+		$hasNextPage = true;
+	}
+}
+catch(Exceptions\LoginRequiredException){
+	Template::RedirectToLogin();
+}
+catch(Exceptions\InvalidPermissionsException){
+	Template::Emit403(); // No permissions to submit artwork
+}
+
+?><?= Template::Header(['title' => 'Artwork Review Queue', 'artwork' => true, 'highlight' => '', 'description' => 'The queue of unverified artwork.']) ?>
 <main class="artworks">
 	<section class="narrow">
-		<hgroup>
-			<h1>Review Artwork Queue</h1>
-		</hgroup>
+		<h1>Artwork Review Queue</h1>
 
-		<section>
-			<? if($approvedArtwork){ ?>
-			<p class="message success">
-				<a href="<?= $approvedArtwork->Url ?>" property="schema:name"><?= Formatter::ToPlainText($approvedArtwork->Name) ?></a> approved.
-			</p>
-			<? } ?>
-			<? if($declinedArtwork){ ?>
-			<p class="message">
-				“<?= Formatter::ToPlainText($declinedArtwork->Name) ?>” declined.
-			</p>
-			<? } ?>
-			<? if($count == 0){ ?>
-				<p>No artwork to review.</p>
-			<? }else{ ?>
-				<?= Template::ArtworkList(['artworks' => $unverifiedArtworks, 'useAdminUrl' => true]) ?>
-			<? } ?>
-		</section>
+		<? if($status == COVER_ARTWORK_STATUS_APPROVED){ ?>
+		<p class="message success">
+			<i><a href="<?= $artwork->Url ?>" property="schema:name"><?= Formatter::ToPlainText($artwork->Name) ?></a></i> approved.
+		</p>
+		<? } ?>
+		<? if($status == COVER_ARTWORK_STATUS_DECLINED){ ?>
+		<p class="message">
+			<i><?= Formatter::ToPlainText($artwork->Name) ?></i> declined.
+		</p>
+		<? } ?>
+		<? if(sizeof($unverifiedArtworks) == 0){ ?>
+			<p>No artwork to review.</p>
+		<? }else{ ?>
+			<?= Template::ArtworkList(['artworks' => $unverifiedArtworks, 'useAdminUrl' => true]) ?>
+		<? } ?>
 	</section>
 
-	<? if($count > 0){ ?>
 	<nav>
 		<a<? if($page > 1){ ?> href="/admin/artworks/?page=<?= $page - 1 ?>" rel="prev"<? }else{ ?> aria-disabled="true"<? } ?>>Back</a>
-		<ol>
-		<? for($i = 1; $i < $pages + 1; $i++){ ?>
-			<li<? if($page == $i){ ?> class="highlighted"<? } ?>><a href="/admin/artworks/?page=<?= $i ?>"><?= $i ?></a></li>
-		<? } ?>
-		</ol>
-		<a<? if($page < ceil($count / $perPage)){ ?> href="/admin/artworks/?page=<?= $page + 1 ?>" rel="next"<? }else{ ?> aria-disabled="true"<? } ?>>Next</a>
+		<a<? if($hasNextPage){ ?> href="/admin/artworks/?page=<?= $page + 1 ?>" rel="next"<? }else{ ?> aria-disabled="true"<? } ?>>Next</a>
 	</nav>
-	<? } ?>
-
 </main>
 <?= Template::Footer() ?>

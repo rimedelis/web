@@ -293,6 +293,10 @@ class Library{
 			}
 		}
 
+		if(!is_array($results)){
+			$results = [$results];
+		}
+
 		return $results;
 	}
 
@@ -541,6 +545,21 @@ class Library{
 		return $retval;
 	}
 
+	public static function GetEbook($ebookWwwFilesystemPath): ?Ebook{
+		if($ebookWwwFilesystemPath === null){
+			return null;
+		}
+
+		$result = self::GetFromApcu('ebook-' . $ebookWwwFilesystemPath);
+
+		if(sizeof($result) > 0){
+			return $result[0];
+		}
+		else{
+			return null;
+		}
+	}
+
 	public static function RebuildCache(): void{
 		// We check a lockfile because this can be a long-running command.
 		// We don't want to queue up a bunch of these in case someone is refreshing the index constantly.
@@ -633,8 +652,8 @@ class Library{
 		foreach($ebooksByCollection as $collection => $sortItems){
 			// Sort the array by the ebook's ordinal in the collection. We use this custom sort function
 			// because an ebook may share the same place in a collection with another ebook; see above.
-			usort($sortItems, function($a, $b) {
-				if($a->Ordinal == $b->Ordinal) {
+			usort($sortItems, function($a, $b){
+				if($a->Ordinal == $b->Ordinal){
 				        return 0;
 				    }
 				    return ($a->Ordinal < $b->Ordinal) ? -1 : 1;
@@ -667,5 +686,15 @@ class Library{
 		}
 
 		apcu_delete($lockVar);
+	}
+
+	/**
+	 * @return array<Artist>
+	 */
+	public static function GetAllArtists(): array{
+		return Db::Query('
+			SELECT *
+			from Artists
+			order by Name asc', [], 'Artist');
 	}
 }

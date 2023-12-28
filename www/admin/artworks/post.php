@@ -1,41 +1,45 @@
 <?
-if(HttpInput::RequestMethod() != HTTP_PATCH){
-	http_response_code(405);
-	exit();
-}
-
-$artworkId = HttpInput::Int(GET, 'artworkid');
-
 try{
-	$artwork = Artwork::Get($artworkId);
-}
-catch(Exceptions\AppException){
-	Template::Emit404();
-}
+	session_start();
 
-session_start();
-
-try{
-	$status = HttpInput::Str(POST, 'status', false);
-	if($status === null){
-		throw new Exceptions\InvalidRequestException('Empty or invalid status');
+	if(HttpInput::RequestMethod() != HTTP_PATCH){
+		throw new Exceptions\InvalidRequestException();
 	}
 
-	$artwork->Status = $status;
+	if($GLOBALS['User'] === null){
+		throw new Exceptions\LoginRequiredException();
+	}
+
+	if(!$GLOBALS['User']->Benefits->CanReviewArtwork){
+		throw new Exceptions\InvalidPermissionsException();
+	}
+
+	$artwork = Artwork::Get(HttpInput::Int(GET, 'artworkid'));
+	$artwork->Status = HttpInput::Str(POST, 'status', false);
+	$artwork->ReviewerUserId = $GLOBALS['User']->UserId;
 	$artwork->Save();
 
-	switch($artwork->Status){
-		case COVER_ARTWORK_STATUS_APPROVED:
-			$_SESSION['approved-artwork-id'] = $artwork->ArtworkId;
-			break;
-		case COVER_ARTWORK_STATUS_DECLINED:
-			$_SESSION['declined-artwork-id'] = $artwork->ArtworkId;
-			break;
-	}
+	$_SESSION['artwork-id'] = $artwork->ArtworkId;
+	$_SESSION['status'] = $artwork->Status;
 
 	http_response_code(303);
 	header('Location: /admin/artworks');
 }
-catch(Exceptions\AppException){
-	http_response_code(422);
+catch(Exceptions\InvalidRequestException){
+	http_response_code(405);
+}
+catch(Exceptions\LoginRequiredException){
+	Template::RedirectToLogin();
+}
+catch(Exceptions\InvalidPermissionsException){
+	Template::Emit403(); // No permissions to submit artwork
+}
+catch(Exceptions\ArtworkNotFoundException){
+	Template::Emit404();
+}
+catch(Exceptions\AppException $exception){
+	$_SESSION['exception'] = $exception;
+
+	http_response_code(303);
+	header('Location: /admin/artworks/' . $artwork->ArtworkId);
 }

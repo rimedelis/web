@@ -2,5 +2,5 @@
 namespace Exceptions;
 
 class ArtistNameRequiredException extends AppException{
-	protected $message = 'Artist name required';
+	protected $message = 'An artist name is required.';
 }

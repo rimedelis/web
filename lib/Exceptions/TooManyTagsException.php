@@ -2,5 +2,5 @@
 namespace Exceptions;
 
 class TooManyTagsException extends AppException{
-	protected $message = 'Number of tags exceeds ' . COVER_ARTWORK_MAX_TAGS;
+	protected $message = 'Too many tags; the maximum is ' . COVER_ARTWORK_MAX_TAGS . '.';
 }
