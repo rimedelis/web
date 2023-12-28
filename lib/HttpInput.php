@@ -85,7 +85,7 @@ class HttpInput{
 		return self::GetHttpVar($variable, HTTP_VAR_ARRAY, GET, $default);
 	}
 
-	private static function GetHttpVar(string $variable, int $type, string $set, $default){
+	private static function GetHttpVar(string $variable, int $type, string $set, mixed $default): mixed{
 		$vars = [];
 
 		switch($set){

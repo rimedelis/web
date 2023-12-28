@@ -745,6 +745,10 @@ class Ebook{
 		return $string;
 	}
 
+
+	/**
+	 * @param array<SimpleXMLElement>|false|null $elements
+	 */
 	private function NullIfEmpty($elements): ?string{
 		if($elements === false){
 			return null;
@@ -753,6 +757,7 @@ class Ebook{
 		// Helper function when getting values from SimpleXml.
 		// Checks if the result is set, and returns the value if so; if the value is the empty string, return null.
 		if(isset($elements[0])){
+			vdd($elements[0]);
 			$str = (string)$elements[0];
 			if($str !== ''){
 				return $str;

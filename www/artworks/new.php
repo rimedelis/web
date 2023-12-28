@@ -188,7 +188,7 @@ catch(Exceptions\InvalidPermissionsException){
 					</label>
 				</fieldset>
 			</fieldset>
-			<? if(false){ ?>
+			<!--
 			<fieldset>
 				<legend></legend>
 				<div>
@@ -204,7 +204,7 @@ catch(Exceptions\InvalidPermissionsException){
 					/>
 				</div>
 			</fieldset>
-			<? } ?>
+			-->
 			<fieldset>
 				<legend>Image file</legend>
 				<div>
