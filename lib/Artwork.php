@@ -1,19 +1,12 @@
 <?
 use Safe\DateTime;
-use function Safe\apcu_fetch;
-use function Safe\chmod;
 use function Safe\copy;
 use function Safe\date;
 use function Safe\filesize;
 use function Safe\getimagesize;
-use function Safe\imagecopyresampled;
-use function Safe\imagecreatetruecolor;
-use function Safe\imagejpeg;
 use function Safe\ini_get;
 use function Safe\preg_replace;
-use function Safe\rename;
 use function Safe\sprintf;
-use function Safe\tempnam;
 
 /**
  * @property string $UrlName
@@ -308,9 +301,10 @@ class Artwork extends PropertiesBase{
 		// Check for existing Artwork objects with the same URL but different Artwork IDs.
 		try{
 			$existingArtwork = Artwork::GetByUrl($this->Artist->UrlName, $this->UrlName);
-
-			// Duplicate found, alert the user
-			$error->Add(new Exceptions\ArtworkAlreadyExistsException());
+			if($existingArtwork->ArtworkId != $this->ArtworkId){
+				// Duplicate found, alert the user
+				$error->Add(new Exceptions\ArtworkAlreadyExistsException());
+			}
 		}
 		catch(Exceptions\ArtworkNotFoundException){
 			// No duplicates found, continue
@@ -375,7 +369,7 @@ class Artwork extends PropertiesBase{
 		$this->Artist = Artist::GetOrCreate($this->Artist);
 
 		Db::Query('
-			INSERT INTO
+			INSERT into
 			Artworks (ArtistId, Name, UrlName, CompletedYear, CompletedYearIsCirca, Created, Status, ReviewerUserId, MuseumUrl,
 			                      PublicationYear, PublicationYearPageUrl, CopyrightPageUrl, ArtworkPageUrl,
 			                      EbookWwwFilesystemPath, MimeType)

@@ -104,7 +104,7 @@ class Artist extends PropertiesBase{
 		$this->Validate();
 		Db::Query('
 			INSERT into Artists (Name, UrlName, DeathYear)
-			VALUES (?,
+			values (?,
 			        ?,
 			        ?)
 		', [$this->Name, $this->UrlName, $this->DeathYear]);
@@ -118,8 +118,8 @@ class Artist extends PropertiesBase{
 	public static function GetOrCreate(Artist $artist): Artist{
 		$result = Db::Query('
 			SELECT *
-			FROM Artists
-			WHERE UrlName = ?
+			from Artists
+			where UrlName = ?
 		', [$artist->UrlName], 'Artist');
 
 		if(isset($result[0])){
@@ -134,10 +134,10 @@ class Artist extends PropertiesBase{
 	public static function FindMatch(string $artistName): ?Artist{
 		$result = Db::Query('
 			SELECT a.*
-			FROM Artists a LEFT JOIN ArtistAlternateSpellings alt USING (ArtistId)
-			WHERE a.Name = ? OR alt.AlternateSpelling = ?
-			ORDER BY a.DeathYear DESC
-			LIMIT 1;
+			from Artists a left join ArtistAlternateSpellings alt using (ArtistId)
+			where a.Name = ? or alt.AlternateSpelling = ?
+			order by a.DeathYear desc
+			limit 1;
 		', [$artistName, $artistName], 'Artist');
 
 		return $result[0] ?? null;

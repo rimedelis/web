@@ -1,17 +1,17 @@
 <?
 use Safe\DateTime;
 use function Safe\apcu_fetch;
+use function Safe\exec;
 use function Safe\filemtime;
 use function Safe\filesize;
 use function Safe\glob;
 use function Safe\gmdate;
 use function Safe\ksort;
-use function Safe\natsort;
 use function Safe\preg_match;
 use function Safe\preg_replace;
+use function Safe\shell_exec;
 use function Safe\sleep;
 use function Safe\sort;
-use function Safe\rsort;
 use function Safe\usort;
 
 
@@ -321,11 +321,8 @@ class Library{
 	 */
 	public static function GetEbooksFromFilesystem(?string $webRoot = WEB_ROOT): array{
 		$ebooks = [];
-		$commandOutput = shell_exec('find ' . escapeshellarg($webRoot . '/ebooks/') . ' -name "content.opf" | sort');
-		if(!$commandOutput){
-			$commandOutput = '';
-		}
-		$contentFiles = explode("\n", trim($commandOutput));
+
+		$contentFiles = explode("\n", trim(shell_exec('find ' . escapeshellarg($webRoot . '/ebooks/') . ' -name "content.opf" | sort')));
 
 		foreach($contentFiles as $path){
 			if($path == '')
@@ -588,12 +585,7 @@ class Library{
 		$authors = [];
 		$tagsByName = [];
 
-		$commandOutput = shell_exec('find ' . EBOOKS_DIST_PATH . ' -name "content.opf"');
-		if(!$commandOutput){
-			$commandOutput = '';
-		}
-
-		foreach(explode("\n", trim($commandOutput)) as $filename){
+		foreach(explode("\n", trim(shell_exec('find ' . EBOOKS_DIST_PATH . ' -name "content.opf"'))) as $filename){
 			try{
 				$ebookWwwFilesystemPath = preg_replace('|/content\.opf|ius', '', $filename);
 

@@ -7,6 +7,7 @@ use function Safe\glob;
 use function Safe\preg_match;
 use function Safe\preg_replace;
 use function Safe\sprintf;
+use function Safe\shell_exec;
 use function Safe\substr;
 
 class Ebook{
@@ -163,11 +164,7 @@ class Ebook{
 		}
 
 		// Fill in the short history of this repo.
-		$commandOutput = shell_exec('cd ' . escapeshellarg($this->RepoFilesystemPath) . ' && git log -n5 --pretty=format:"%ct %H %s"');
-		if(!$commandOutput){
-			$commandOutput = '';
-		}
-		$historyEntries = explode("\n",  $commandOutput);
+		$historyEntries = explode("\n",  shell_exec('cd ' . escapeshellarg($this->RepoFilesystemPath) . ' && git log -n5 --pretty=format:"%ct %H %s"'));
 
 		foreach($historyEntries as $entry){
 			$array = explode(' ', $entry, 3);
@@ -757,7 +754,6 @@ class Ebook{
 		// Helper function when getting values from SimpleXml.
 		// Checks if the result is set, and returns the value if so; if the value is the empty string, return null.
 		if(isset($elements[0])){
-			vdd($elements[0]);
 			$str = (string)$elements[0];
 			if($str !== ''){
 				return $str;

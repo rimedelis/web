@@ -1,6 +1,7 @@
 <?
 use Safe\DateTime;
 use function Safe\preg_match;
+use function Safe\posix_getpwuid;
 
 class DbConnection{
 	private $_link = null;

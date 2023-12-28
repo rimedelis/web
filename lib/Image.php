@@ -1,4 +1,5 @@
 <?
+use function Safe\exec;
 use function Safe\imagecopyresampled;
 use function Safe\imagecreatetruecolor;
 use function Safe\imagejpeg;
@@ -15,7 +16,7 @@ class Image{
 	}
 
 	/**
-	 * @return GdImage
+	 * @return resource
 	 * @throws \Safe\Exceptions\ImageException
 	 * @throws Exceptions\InvalidImageUploadException
 	 */
@@ -41,7 +42,7 @@ class Image{
 	}
 
 	/**
-	 * @return GdImage
+	 * @return resource
 	 * @throws \Exceptions\InvalidImageUploadException
 	 */
 	private function GetImageHandleFromTiff(){

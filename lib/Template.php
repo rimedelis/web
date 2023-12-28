@@ -1,5 +1,6 @@
 <?
 use function Safe\ob_end_clean;
+use function Safe\ob_start;
 
 class Template{
 	/**
