@@ -1,13 +1,6 @@
 <?
 
-/**
- * @property string $Url
- */
-class ArtworkTag extends PropertiesBase{
-	public $TagId;
-	public $Name;
-	protected $_Url;
-
+class ArtworkTag extends Tag{
 	// *******
 	// GETTERS
 	// *******
@@ -56,8 +49,6 @@ class ArtworkTag extends PropertiesBase{
 	 * @throws \Exceptions\ValidationException
 	 */
 	public static function GetOrCreate(ArtworkTag $artworkTag): ArtworkTag{
-		$artworkTag->Validate();
-
 		$result = Db::Query('
 				SELECT *
 				from Tags

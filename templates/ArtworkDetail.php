@@ -1,6 +1,10 @@
 <?
 $artwork = $artwork ?? null;
 $showPDProofTip = $showPDProofTip ?? true;
+
+if($artwork === null){
+	return;
+}
 ?>
 
 <h1><?= Formatter::ToPlainText($artwork->Name) ?></h1>
@@ -41,7 +45,7 @@ $showPDProofTip = $showPDProofTip ?? true;
 	</tr>
 	<tr>
 		<td>Tags</td>
-		<td><ul class="tags"><? foreach($artwork->ArtworkTags as $tag){ ?><li><a href="<?= $tag->Url ?>"><?= Formatter::ToPlainText($tag->Name) ?></a></li><? } ?></ul></td>
+		<td><ul class="tags"><? foreach($artwork->Tags as $tag){ ?><li><a href="<?= $tag->Url ?>"><?= Formatter::ToPlainText($tag->Name) ?></a></li><? } ?></ul></td>
 	</tr>
 </table>
 <h2>PD Proof</h2>

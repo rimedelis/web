@@ -25,7 +25,7 @@ try{
 	$artwork->Name = HttpInput::Str(POST, 'artwork-name', false);
 	$artwork->CompletedYear = HttpInput::Int(POST, 'artwork-year');
 	$artwork->CompletedYearIsCirca = HttpInput::Bool(POST, 'artwork-year-is-circa', false);
-	$artwork->ArtworkTags = Artwork::ParseArtworkTags(HttpInput::Str(POST, 'artwork-tags', false));
+	$artwork->Tags = Artwork::ParseTags(HttpInput::Str(POST, 'artwork-tags', false));
 	$artwork->Status = COVER_ARTWORK_STATUS_UNVERIFIED;
 	$artwork->PublicationYear = HttpInput::Int(POST, 'pd-proof-publication-year');
 	$artwork->PublicationYearPageUrl = HttpInput::Str(POST, 'pd-proof-publication-year-page-url', false);

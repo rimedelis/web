@@ -130,7 +130,7 @@ catch(Exceptions\InvalidPermissionsException){
 						name="artwork-tags"
 						placeholder="A list of comma-separated tags"
 						required="required"
-						value="<?= Formatter::ToPlainText($artwork->GetArtworkTagsImploded()) ?>"
+						value="<?= Formatter::ToPlainText($artwork->ImplodeTags()) ?>"
 					/>
 				</label>
 			</fieldset>

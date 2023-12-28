@@ -11,7 +11,7 @@ use function Safe\sprintf;
 /**
  * @property string $UrlName
  * @property string $Url
- * @property array<ArtworkTag> $ArtworkTags
+ * @property array<ArtworkTag> $Tags
  * @property Artist $Artist
  * @property string $ImageUrl
  * @property string $ThumbUrl
@@ -39,7 +39,7 @@ class Artwork extends PropertiesBase{
 	protected $_UrlName;
 	protected $_Url;
 	protected $_AdminUrl;
-	protected $_ArtworkTags = null;
+	protected $_Tags = null;
 	protected $_Artist = null;
 	protected $_ImageUrl = null;
 	protected $_ThumbUrl = null;
@@ -83,9 +83,9 @@ class Artwork extends PropertiesBase{
 	/**
 	 * @return array<ArtworkTag>
 	 */
-	protected function GetArtworkTags(): array{
-		if($this->_ArtworkTags === null){
-			$this->_ArtworkTags = Db::Query('
+	protected function GetTags(): array{
+		if($this->_Tags === null){
+			$this->_Tags = Db::Query('
 							SELECT t.*
 							from Tags t
 							inner join ArtworkTags at using (TagId)
@@ -93,11 +93,11 @@ class Artwork extends PropertiesBase{
 						', [$this->ArtworkId], 'ArtworkTag');
 		}
 
-		return $this->_ArtworkTags;
+		return $this->_Tags;
 	}
 
-	public function GetArtworkTagsImploded(): string{
-		$tags = $this->ArtworkTags ?? [];
+	public function ImplodeTags(): string{
+		$tags = $this->Tags ?? [];
 		$tags = array_column($tags, 'Name');
 		return trim(implode(', ', $tags));
 	}
@@ -232,18 +232,18 @@ class Artwork extends PropertiesBase{
 			$error->Add(new Exceptions\MissingEbookException());
 		}
 
-		if($this->ArtworkTags === null || count($this->_ArtworkTags) == 0){
+		if($this->Tags === null || count($this->_Tags) == 0){
 			// In-use artwork doesn't have user-provided tags.
 			if($this->Status !== COVER_ARTWORK_STATUS_IN_USE){
 				$error->Add(new Exceptions\TagsRequiredException());
 			}
 		}
 
-		if($this->ArtworkTags !== null && count($this->_ArtworkTags) > COVER_ARTWORK_MAX_TAGS){
+		if($this->Tags !== null && count($this->_Tags) > COVER_ARTWORK_MAX_TAGS){
 			$error->Add(new Exceptions\TooManyTagsException());
 		}
 
-		foreach($this->ArtworkTags as $tag){
+		foreach($this->Tags as $tag){
 			if(strlen($tag->Name) > COVER_ARTWORK_MAX_STRING_LENGTH){
 				$error->Add(new Exceptions\StringTooLongException('Artwork Tag: '. $tag->Name));
 			}
@@ -336,18 +336,18 @@ class Artwork extends PropertiesBase{
 	}
 
 	/** @return array<ArtworkTag> */
-	public static function ParseArtworkTags(?string $artworkTags): array{
-		if(!$artworkTags) return [];
+	public static function ParseTags(?string $tags): array{
+		if(!$tags) return [];
 
-		$artworkTags = array_map('trim', explode(',', $artworkTags));
-		$artworkTags = array_values(array_filter($artworkTags));
-		$artworkTags = array_unique($artworkTags);
+		$tags = array_map('trim', explode(',', $tags));
+		$tags = array_values(array_filter($tags));
+		$tags = array_unique($tags);
 
 		return array_map(function ($str){
-			$artworkTag = new ArtworkTag();
-			$artworkTag->Name = $str;
-			return $artworkTag;
-		}, $artworkTags);
+			$tag = new ArtworkTag();
+			$tag->Name = $str;
+			return $tag;
+		}, $tags);
 	}
 
 	/**
@@ -359,12 +359,12 @@ class Artwork extends PropertiesBase{
 		$this->Validate($uploadedFile);
 		$this->Created = new DateTime();
 
-		// Can't assign directly to $this->ArtworkTags because it's hidden behind a getter
+		// Can't assign directly to $this->Tags because it's hidden behind a getter
 		$tags = [];
-		foreach($this->ArtworkTags as $artworkTag){
+		foreach($this->Tags as $artworkTag){
 			$tags[] = ArtworkTag::GetOrCreate($artworkTag);
 		}
-		$this->ArtworkTags = $tags;
+		$this->Tags = $tags;
 
 		$this->Artist = Artist::GetOrCreate($this->Artist);
 
@@ -395,7 +395,7 @@ class Artwork extends PropertiesBase{
 
 		$this->ArtworkId = Db::GetLastInsertedId();
 
-		foreach($this->ArtworkTags as $tag){
+		foreach($this->Tags as $tag){
 			Db::Query('
 				INSERT into ArtworkTags (ArtworkId, TagId)
 				values (?,
@@ -477,7 +477,7 @@ class Artwork extends PropertiesBase{
 		$searchString .= ' ' . $this->Artist->Name;
 		$searchString .= ' ' . implode(' ', $this->Artist->AlternateSpellings);
 
-		foreach($this->ArtworkTags as $tag){
+		foreach($this->Tags as $tag){
 			$searchString .= ' ' . $tag->Name;
 		}
 

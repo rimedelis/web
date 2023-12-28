@@ -27,9 +27,9 @@ $useAdminUrl = $useAdminUrl ?? false;
 		<div>
 			<p>Year completed: <? if($artwork->CompletedYear === null){ ?>(unknown)<? }else{ ?><?= $artwork->CompletedYear ?><? if($artwork->CompletedYearIsCirca){ ?> (circa)<? } ?><? } ?></p>
 			<p>Status: <?= Template::ArtworkStatus(['artwork' => $artwork]) ?></p>
-			<? if(count($artwork->ArtworkTags) > 0){ ?>
+			<? if(count($artwork->Tags) > 0){ ?>
 			<p>Tags:</p>
-			<ul class="tags"><? foreach($artwork->ArtworkTags as $tag){ ?><li><a href="<?= $tag->Url ?>"><?= Formatter::ToPlainText($tag->Name) ?></a></li><? } ?></ul>
+			<ul class="tags"><? foreach($artwork->Tags as $tag){ ?><li><a href="<?= $tag->Url ?>"><?= Formatter::ToPlainText($tag->Name) ?></a></li><? } ?></ul>
 			<? } ?>
 		</div>
 	</li>
